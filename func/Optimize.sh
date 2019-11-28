@@ -1,32 +1,40 @@
 #!/bin/bash
 RemoveLoginBrand() {
-    cp /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js.bak
+    if [ ! -f "/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js.bak" ]; then
+        cp -a /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js.bak
+    fi
     sed -i "s#data.status !== 'Active'#false#g" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
 }
 
 InstallBasicComponent() {
-    apt install vim wget curl htop git axel aria2 apt-transport-https ca-certificates curl software-properties-common gnupg2 -y
+    apt install vim wget curl htop git axel aria2 apt-transport-https ca-certificates software-properties-common gnupg2 -y
 }
 
 ReplaceEnterpriseSource() {
     if [ -f "/etc/apt/sources.list.d/pve-enterprise.list"  ]; then
-    mv /etc/apt/sources.list.d/pve-enterprise.list /etc/apt/sources.list.d/pve-enterprise.list.bak
-    echo -e 'deb http://download.proxmox.com/debian/pve stretch pve-no-subscription\n' > /etc/apt/sources.list.d/pve-community.list
+        mv /etc/apt/sources.list.d/pve-enterprise.list /etc/apt/sources.list.d/pve-enterprise.list.bak
+        echo -e '#deb http://download.proxmox.com/debian/pve buster pve-no-subscription' > /etc/apt/sources.list.d/pve-community.list
+        echo -e 'deb http://mirrors.ustc.edu.cn/proxmox/debian/pve/ buster pve-no-subscription\n' >> /etc/apt/sources.list.d/pve-community.list
     fi
     echo "Source replacement already complete"
 }
 
 ReplaceDebianUpdateRepo() {
-    cat > /etc/apt/sources.list <<EOF
-deb https://mirrors.aliyun.com/debian/ stretch main non-free contrib
-deb-src https://mirrors.aliyun.com/debian/ stretch main non-free contrib
-deb https://mirrors.aliyun.com/debian-security stretch/updates main
-deb-src https://mirrors.aliyun.com/debian-security stretch/updates main
-deb https://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib
-deb-src https://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib
-deb https://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib
-deb-src https://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib
+    if [ ! -f "/etc/apt/sources.list.bak" ]; then
+        apt install apt-transport-https -y
+        cp -a /etc/apt/sources.list /etc/apt/sources.list.bak
+        cat > /etc/apt/sources.list <<EOF
+# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free
+deb https://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free
 EOF
+    fi
 }
 
 AddReserveProxy() {
@@ -74,6 +82,14 @@ BoostNow() {
     echo '#####PVE Boost Script#####'
     echo "Let's do some choice"
 while :; do echo
+                read -e -p "Do you want to add Confirm For DangerCommand? [y/n]: " ChoiceConfirmDC
+                if [[ ! ${ChoiceConfirmDC} =~ ^[y,n]$ ]]; then
+                  echo "${CWARNING}input error! Please only input 'y' or 'n'"
+                else
+                  break
+                fi
+              done
+while :; do echo
                 read -e -p "Do you want to add Proxmox Update Accelerator? [y/n]: " ChoiceAccelerator
                 if [[ ! ${ChoiceAccelerator} =~ ^[y,n]$ ]]; then
                   echo "${CWARNING}input error! Please only input 'y' or 'n'"
@@ -96,9 +112,11 @@ while :; do echo
     RemoveLoginBrand
     UpdateRepo
     InstallBasicComponent
+if [ "${ChoiceConfirmDC}" == 'y' ]; then
     AddConfirmForDangerCommand
+fi
     SSHLoginAccelerate
-if [ "${ChoiceAcceleratorn}" == 'y' ]; then
+if [ "${ChoiceAccelerator}" == 'y' ]; then
     AddReserveProxy
 fi
 if [ "${ChoiceUpdate}" == 'y' ]; then
