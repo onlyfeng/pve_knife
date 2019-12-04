@@ -109,7 +109,7 @@ while :; do echo
     char=$(get_char)
     ReplaceEnterpriseSource
     ReplaceDebianUpdateRepo
-    RemoveLoginBrand
+    #RemoveLoginBrand
     UpdateRepo
     InstallBasicComponent
 if [ "${ChoiceConfirmDC}" == 'y' ]; then
@@ -122,6 +122,7 @@ fi
 if [ "${ChoiceUpdate}" == 'y' ]; then
     UpgradeSoftware
 fi
+    RemoveLoginBrand
     echo '#####PVE Boost Script#####'
     echo 'All Done Enjoy It'    
 }
